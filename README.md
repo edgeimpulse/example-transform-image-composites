@@ -1,6 +1,6 @@
 # Composite Image Generation Block for Edge Impulse
 
-This is a transformation block that generates synthetic data for your Edge Impulse project by compositing background images with randomly placed object images (with transparency). To add new object images and background images store them in the composites folder and use the following command to upload to the block: 
+This is a transformation block that generates synthetic data for your Edge Impulse project by compositing background images with randomly placed object images (with transparency). It uses the method described in this tutorial: https://github.com/edgeimpulse/conveyor-counting-data-synthesis-demo. To add new object images and background images store them in the composites folder and use the following command to upload to the block: 
 ```
 $ edge-impulse-blocks push
 ```
