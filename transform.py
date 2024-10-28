@@ -7,6 +7,8 @@ import traceback
 import random
 from wand.image import Image
 from wand.color import Color
+import cv2
+import numpy as np
 
 
 
@@ -25,10 +27,14 @@ parser.add_argument('--images', type=int, required=True, help="Number of images 
 parser.add_argument('--objects', type=int, required=True, help="Maximum number of objects to generate")
 parser.add_argument('--allow-overlap', type=int, required=True, help="Whether objects are allowed to overlap")
 parser.add_argument('--allow-rotate', type=int, required=True, help="Whether to apply random rotation to objects")
-parser.add_argument('--allow-motion-blur', type=int, required=True, help="Whether to apply blur to objects to simulate motion")
+parser.add_argument('--apply-motion-blur', type=int, required=True, help="Whether to apply blur to objects to simulate motion")
 parser.add_argument('--motion-blur-direction', type=int, required=False, help="What direction apply blur to objects to simulate motion (-1 for random)", default=-1)
-
 parser.add_argument('--object-area', type=str, required=True, help="x1,y1,x2,y2 coordinates of the valid area to place objects in the composite image")
+
+parser.add_argument('--apply-fisheye', type=int, required=True, help='Whether to apply fisheye lens effect to the final images')
+parser.add_argument('--apply-fisheye-all-layers', type=int, required=False, help='Whether to apply fisheye lens effect to all layers or just to the objects')
+parser.add_argument('--fisheye-strength', type=float, required=False, default=0.5, help='Whether to apply fisheye lens effect to the final images')
+parser.add_argument('--crop-fisheye', type=int, required=False, help='Whether to apply fisheye lens effect to all layers or just to the objects')
 
 parser.add_argument('--upload-category', type=str, required=False, help="Which category to upload data to in Edge Impulse", default='split')
 parser.add_argument('--synthetic-data-job-id', type=int, required=False, help="If specified, sets the synthetic_data_job_id metadata key")
@@ -58,7 +64,7 @@ upload_category = args.upload_category
 num_objects = args.objects
 allow_overlap = args.allow_overlap
 allow_rotate = args.allow_rotate
-allow_motion_blur = args.allow_motion_blur
+apply_motion_blur = args.apply_motion_blur
 blur_direction = args.motion_blur_direction
 
 bbox_json = {
@@ -95,6 +101,66 @@ if not os.path.exists(bg_dir):
 if not os.path.exists(obj_dir):
     print('Object directory not found:', obj_dir)
     exit(1)
+
+
+# Function to apply fisheye effect
+def apply_fisheye(image, strength=0.5, crop=True, crop_box=None):
+    height, width = image.shape[:2]
+    K = np.array([[width, 0, width / 2],
+                  [0, height, height / 2],
+                  [0, 0, 1]], dtype=np.float32)
+    D = np.array([strength, strength, 0, 0], dtype=np.float32)
+    map1, map2 = cv2.fisheye.initUndistortRectifyMap(K, D, np.eye(3), K, (width, height), cv2.CV_16SC2)
+    fisheye_image = cv2.remap(image, map1, map2, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
+    
+    if crop:
+        if crop_box:
+            x, y, w, h = crop_box
+        else:
+            # Find the bounding box of the non-black area
+            gray = cv2.cvtColor(fisheye_image, cv2.COLOR_BGR2GRAY)
+            _, thresh = cv2.threshold(gray, 1, 255, cv2.THRESH_BINARY)
+            contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            x, y, w, h = cv2.boundingRect(contours[0])
+            
+        # Crop the image to the bounding box
+        cropped_image = fisheye_image[y:y+h, x:x+w]
+        
+        # Scale the cropped image back to the original size
+        scaled_image = cv2.resize(cropped_image, (width, height), interpolation=cv2.INTER_LINEAR)
+        
+        return scaled_image, (x, y, w, h)
+    else:
+        return fisheye_image, (0, 0, width, height)
+
+# Function to adjust bounding boxes for fisheye effect
+def adjust_bounding_boxes(objects, width, height, crop_box, strength=0.5):
+    K = np.array([[width, 0, width / 2],
+                  [0, height, height / 2],
+                  [0, 0, 1]], dtype=np.float32)
+    D = np.array([strength, strength, 0, 0], dtype=np.float32)
+    new_objects = []
+    crop_x, crop_y, crop_w, crop_h = crop_box
+    scale_x = width / crop_w
+    scale_y = height / crop_h
+    
+    for obj in objects:
+        x, y, w, h = obj['x'], obj['y'], obj['width'], obj['height']
+        points = np.array([[x, y], [x + w, y], [x, y + h], [x + w, y + h]], dtype=np.float32)
+        points = np.expand_dims(points, axis=1)
+        new_points = cv2.fisheye.undistortPoints(points, K, D, P=K)
+        new_points = new_points.squeeze()
+        if crop_box != (0, 0, width, height):
+            new_points[:, 0] = (new_points[:, 0] - crop_x) * scale_x
+            new_points[:, 1] = (new_points[:, 1] - crop_y) * scale_y
+        new_x, new_y = np.min(new_points, axis=0)
+        new_w, new_h = np.max(new_points, axis=0) - np.min(new_points, axis=0)
+        new_objects.append({'label': obj['label'], 'x': int(new_x), 'y': int(new_y), 'width': int(new_w), 'height': int(new_h)})
+    
+    return new_objects
+
+
+
 # Iterate through each folder and load into a list of Image() objects if the files are images (png, bmp, jpg, jpeg)
 bg_images = []
 obj_images = []
@@ -108,6 +174,9 @@ for filename in os.listdir(obj_dir):
         if labels == ['all'] or filename.split('_')[0] in labels:
             obj_images.append({"image": Image(filename=os.path.join(obj_dir, filename)), "label": filename.split('_')[0]})
             print('Loaded object image:', filename)
+
+
+
 
 
 
@@ -134,6 +203,8 @@ print('')
 for i in range(base_images_number):
     objects = []
     background = bg_images[random.randrange(len(bg_images))].clone()
+    # init the object layer with transparent background and same size as the background
+    object_layer = Image(width=background.width, height=background.height, background=Color('transparent'))
     # Define the dimensions of the background image
     background_width = background.width
     background_height = background.height
@@ -145,7 +216,7 @@ for i in range(base_images_number):
     object_area_width = object_area[2] - object_area[0]
     object_area_height = object_area[3] - object_area[1]
 
-    if allow_motion_blur:
+    if apply_motion_blur:
         blur_amount = random.randrange(8)
         if args.motion_blur_direction == -1:
             blur_direction = random.choice([-90, 90])
@@ -164,7 +235,7 @@ for i in range(base_images_number):
         object_height = object_image.height
 
         object_image.resize(object_width, object_height)
-        if allow_motion_blur:
+        if apply_motion_blur:
             object_image.motion_blur(sigma=blur_amount, angle=blur_direction)
 
         # Place the object in a random position within the defined area
@@ -185,13 +256,34 @@ for i in range(base_images_number):
                         break
         # If there is no overlap, place the object on the background image
         if not overlap:
-            background.composite(object_image, x, y)
+            object_layer.composite(object_image, x, y)
 
             # Add the object's position and size to the list of placed objects
             objects.append({'label': label, 'x': x, 'y': y, 'width': object_width, 'height': object_height})
 
     print(f'Created image {i+1} of {base_images_number} with {len(objects)} objects', end='', flush=True)
     fullpath = os.path.join(args.out_directory,f'composite.{epoch}.{i}.png')
+
+    if args.apply_fisheye:
+        object_layer_np = np.array(object_layer)
+        background_np = np.array(background)
+        
+        if args.apply_fisheye_all_layers:
+            background_np, background_crop_box = apply_fisheye(background_np, strength=args.fisheye_strength, crop=args.crop_fisheye)
+            object_layer_np, object_layer_crop_box = apply_fisheye(object_layer_np, strength=args.fisheye_strength, crop=args.crop_fisheye, crop_box=background_crop_box)
+        else:
+            height, width = background_np.shape[:2]
+            background_crop_box = (0, 0, width, height)
+            object_layer_np, object_layer_crop_box = apply_fisheye(object_layer_np, strength=args.fisheye_strength,crop_box=background_crop_box)
+        # convert back to Image for each layer
+        object_layer = Image.from_array(object_layer_np)
+        background = Image.from_array(background_np)
+        
+
+        objects = adjust_bounding_boxes(objects, background_np.shape[1], background_np.shape[0], background_crop_box, strength=args.fisheye_strength)
+
+    # composite the object layer on top of the background
+    background.composite(object_layer, 0, 0)
     background.format = 'png'
     background.save(filename=fullpath)
     bbox_json["boundingBoxes"].update({f'composite.{epoch}.{i}.png': objects})
@@ -208,7 +300,7 @@ for i in range(base_images_number):
                         'generated_by': 'composite-image-generator',
                         'allow_overlap': str(args.allow_overlap),
                         'allow_rotate': str(args.allow_rotate),
-                        'allow_motion_blur': str(args.allow_motion_blur),
+                        'apply_motion_blur': str(args.apply_motion_blur),
                         'motion_blur_direction': str(args.motion_blur_direction),
                         'object_area': str(args.object_area),
                     }),
