@@ -1,71 +1,99 @@
-[{
-    "name": "Composite Directory",
-    "value": "composites",
-    "type": "string",
-    "help": "What folder are the source composite images found in? (there should be background and object folders)",
-    "param": "composite-dir"
-}, {
-    "name": "Labels",
-    "value": "all",
-    "type": "string",
-    "help": "Which objects to generate images for, as a comma-separated list. Set as 'all' to generate images for all objects",
-    "param": "labels"
-}, {
-    "name": "Number of images",
-    "value": 10,
-    "type": "int",
-    "help": "Number of images to generate",
-    "param": "images"
-}, {
-    "name": "Maximum number of objects",
-    "value": 5,
-    "type": "int",
-    "help": "Maximum number of objects to generate in each image",
-    "param": "objects"
-}, {
-    "name": "Allow overlap",
-    "value": false,
-    "type": "boolean",
-    "help": "Whether objects are allowed to overlap",
-    "param": "allow-overlap"
-}, {
-    "name": "Allow rotate",
-    "value": true,
-    "type": "boolean",
-    "help": "Whether to apply random rotation to objects",
-    "param": "allow-rotate"
-}, {
-    "name": "Allow motion blur",
-    "value": false,
-    "type": "boolean",
-    "help": "Whether to apply blur to objects to simulate motion",
-    "param": "allow-motion-blur"
-}, {
-    "name": "Motion blur direction",
-    "value": -90,
-    "type": "int",
-    "help": "What direction to apply blur to objects to simulate motion (-1 for random)",
-    "param": "motion-blur-direction",
-    "showIf": {
-        "parameter": "allow-motion-blur",
-        "operator": "eq",
-        "value": "true"
-    }
-}, {
-    "name": "Object area",
-    "value": "-1",
-    "type": "string",
-    "help": "x1,y1,x2,y2 coordinates of the valid area to place objects in the composite image, or -1 for the whole image",
-    "param": "object-area"
-}, {
-    "name": "Upload to category",
-    "value": "split",
-    "type": "select",
-    "valid": [
-        { "label": "Split 80/20 between training and testing", "value": "split" },
-        { "label": "Training", "value": "training" },
-        { "label": "Testing", "value": "testing" }
-    ],
-    "help": "Data will be uploaded to this category in your project",
-    "param": "upload-category"
-}]
+{
+    "version": 1,
+    "type": "synthetic-data",
+    "info": {
+        "name": "Composite Image Generator",
+        "description": "Uses background and object images to generate an object detection dataset"
+    },
+    "parameters": [
+        {
+            "name": "Composite Directory",
+            "value": "composites",
+            "type": "string",
+            "help": "What folder are the source composite images found in? (there should be background and object folders)",
+            "param": "composite-dir"
+        },
+        {
+            "name": "Labels",
+            "value": "all",
+            "type": "string",
+            "help": "Which objects to generate images for, as a comma-separated list. Set as 'all' to generate images for all objects",
+            "param": "labels"
+        },
+        {
+            "name": "Number of images",
+            "value": 10,
+            "type": "int",
+            "help": "Number of images to generate",
+            "param": "images"
+        },
+        {
+            "name": "Maximum number of objects",
+            "value": 5,
+            "type": "int",
+            "help": "Maximum number of objects to generate in each image",
+            "param": "objects"
+        },
+        {
+            "name": "Allow overlap",
+            "value": false,
+            "type": "boolean",
+            "help": "Whether objects are allowed to overlap",
+            "param": "allow-overlap"
+        },
+        {
+            "name": "Allow rotate",
+            "value": true,
+            "type": "boolean",
+            "help": "Whether to apply random rotation to objects",
+            "param": "allow-rotate"
+        },
+        {
+            "name": "Allow motion blur",
+            "value": false,
+            "type": "boolean",
+            "help": "Whether to apply blur to objects to simulate motion",
+            "param": "allow-motion-blur"
+        },
+        {
+            "name": "Motion blur direction",
+            "value": -90,
+            "type": "int",
+            "help": "What direction to apply blur to objects to simulate motion (-1 for random)",
+            "param": "motion-blur-direction",
+            "showIf": {
+                "parameter": "allow-motion-blur",
+                "operator": "eq",
+                "value": "true"
+            }
+        },
+        {
+            "name": "Object area",
+            "value": "-1",
+            "type": "string",
+            "help": "x1,y1,x2,y2 coordinates of the valid area to place objects in the composite image, or -1 for the whole image",
+            "param": "object-area"
+        },
+        {
+            "name": "Upload to category",
+            "value": "split",
+            "type": "select",
+            "valid": [
+                {
+                    "label": "Split 80/20 between training and testing",
+                    "value": "split"
+                },
+                {
+                    "label": "Training",
+                    "value": "training"
+                },
+                {
+                    "label": "Testing",
+                    "value": "testing"
+                }
+            ],
+            "help": "Data will be uploaded to this category in your project",
+            "param": "upload-category"
+        }
+    ]
+}
