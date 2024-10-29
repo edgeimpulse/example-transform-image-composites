@@ -19,6 +19,108 @@ The Studio now has a feature for interacting with Synthetic Data directly from t
 
 ![Synthetic Data](images/synthetic-data.png)
 
+## Understanding the Parameters:
+
+The following parameters are used in the `parameters.json` file to configure the UI. There are a number of options for image processing and transformation tasks:
+
+### Composite Parameters
+
+- **Composite Directory**
+  - **Description**: The folder where the source composite images are found. This folder should contain `background` and `object` subfolders.
+  - **Type**: `string`
+  - **Default Value**: `composites`
+  - **Parameter**: `composite-dir`
+
+- **Labels**
+  - **Description**: A comma-separated list of objects to generate images for. Set to `all` to generate images for all objects.
+  - **Type**: `string`
+  - **Default Value**: `all`
+  - **Parameter**: `labels`
+
+- **Number of Images**
+  - **Description**: The number of images to generate.
+  - **Type**: `int`
+  - **Default Value**: `10`
+  - **Parameter**: `images`
+
+- **Object Area**
+  - **Description**: The coordinates (x1, y1, x2, y2) of the valid area to place objects in the composite image, or `-1` for the whole image.
+  - **Type**: `string`
+  - **Default Value**: `-1`
+  - **Parameter**: `object-area`
+
+- **Maximum Number of Objects**
+  - **Description**: The maximum number of objects to generate in each image.
+  - **Type**: `int`
+  - **Default Value**: `5`
+  - **Parameter**: `objects`
+
+- **Allow Overlap**
+  - **Description**: Whether objects are allowed to overlap.
+  - **Type**: `boolean`
+  - **Default Value**: `false`
+  - **Parameter**: `allow-overlap`
+
+- **Allow Rotate**
+  - **Description**: Whether to apply random rotation to objects.
+  - **Type**: `boolean`
+  - **Default Value**: `true`
+  - **Parameter**: `allow-rotate`
+
+### Image Effects
+
+- **Apply Motion Blur?**
+  - **Description**: Whether to apply blur to objects to simulate motion.
+  - **Type**: `boolean`
+  - **Default Value**: `false`
+  - **Parameter**: `apply-motion-blur`
+
+- **Motion Blur Direction**
+  - **Description**: The direction to apply blur to objects to simulate motion (`-1` for random).
+  - **Type**: `int`
+  - **Default Value**: `-90`
+  - **Parameter**: `motion-blur-direction`
+  - **Show If**: `apply-motion-blur` is `true`
+
+- **Apply Fisheye Lens Effect**
+  - **Description**: Whether to apply fisheye lens effect to the final images.
+  - **Type**: `boolean`
+  - **Default Value**: `false`
+  - **Parameter**: `apply-fisheye`
+
+- **Apply Fisheye Lens Effect to All Layers**
+  - **Description**: Whether to apply fisheye lens effect to all layers or just to the objects (in case your background images are already fisheyed).
+  - **Type**: `boolean`
+  - **Default Value**: `true`
+  - **Parameter**: `apply-fisheye-all-layers`
+  - **Show If**: `apply-fisheye` is `true`
+
+- **Fisheye Lens Effect Strength**
+  - **Description**: The strength of the fisheye lens effect.
+  - **Type**: `float`
+  - **Default Value**: `0.5`
+  - **Parameter**: `fisheye-strength`
+  - **Show If**: `apply-fisheye` is `true`
+
+- **Crop to Fisheye?**
+  - **Description**: Whether to crop the image to remove black borders after applying fisheye lens effect.
+  - **Type**: `boolean`
+  - **Default Value**: `true`
+  - **Parameter**: `crop-fisheye`
+  - **Show If**: `apply-fisheye` is `true`
+
+### Upload Parameters
+
+- **Upload to Category**
+  - **Description**: The category to upload data to in Edge Impulse.
+  - **Type**: `select`
+  - **Default Value**: `split`
+  - **Parameter**: `upload-category`
+  - **Options**:
+    - `split`: Split 80/20 between training and testing
+    - `training`: Training
+    - `testing`: Testing
+
 ### Customizing this repository (enterprise only)
 
 You can modify this repository and push it as a new custom Synthetic Data transformation block.

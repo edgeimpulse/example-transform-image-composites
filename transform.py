@@ -9,8 +9,7 @@ from wand.image import Image
 from wand.color import Color
 import cv2
 import numpy as np
-
-
+from rembg import remove
 
 if not os.getenv('EI_PROJECT_API_KEY'):
     print('Missing EI_PROJECT_API_KEY')
@@ -22,6 +21,11 @@ INGESTION_HOST = os.environ.get("EI_INGESTION_HOST", "edgeimpulse.com")
 # these are the three arguments that we get in
 parser = argparse.ArgumentParser(description='Use OpenAI Dall-E to generate an image dataset for classification from your prompt')
 parser.add_argument('--composite-dir', type=str, required=True, help="What folder are the source composite images found in? (there should be background and object folders)")
+parser.add_argument('--remove-background', type=int, required=True, help="Do you have images of your objects which need the background removing?")
+parser.add_argument('--raw-object-dir', type=str, required=False, help="What folder are the source composite images found in? (there should be background and object folders)")
+parser.add_argument('--resize-raw-objects', type=int, required=False, help="This will match the size of the raw object images to the first background image in your background directory before extracting the objects (so that they are appropriately sized to be the same scale as the background images)")
+parser.add_argument('--ignore-already-resized', type=int, required=False, help="If set to 1, will ignore already resized images in the object directory, otherwise they will be done again and overwritten", default=0)
+
 parser.add_argument('--labels', type=str, required=True, help="Which objects to generate images for, as a comma-separated list. Set as 'all' to generate images for all objects")
 parser.add_argument('--images', type=int, required=True, help="Number of images to generate")
 parser.add_argument('--objects', type=int, required=True, help="Maximum number of objects to generate")
@@ -102,7 +106,28 @@ if not os.path.exists(obj_dir):
     print('Object directory not found:', obj_dir)
     exit(1)
 
-
+def remove_background_and_crop(image_path, output_path):
+    # Load the image
+    image = cv2.imread(image_path)
+    
+    # Remove the background
+    image_no_bg = remove(image)
+    
+    # Convert the image to a numpy array
+    image_no_bg_np = np.array(image_no_bg)
+    
+    # Find the bounding box of the object
+    gray = cv2.cvtColor(image_no_bg_np, cv2.COLOR_BGR2GRAY)
+    _, binary = cv2.threshold(gray, 1, 255, cv2.THRESH_BINARY)
+    contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    x, y, w, h = cv2.boundingRect(contours[0])
+    
+    # Crop the image to the bounding box
+    cropped_image = image_no_bg_np[y:y+h, x:x+w]
+    
+    # Save the result as a png with transparency
+    cv2.imwrite(output_path, cropped_image)
+    print(f'Cropped object with dimensions {w}x{h} to {output_path}')
 # Function to apply fisheye effect
 def apply_fisheye(image, strength=0.5, crop=True, crop_box=None):
     height, width = image.shape[:2]
@@ -159,15 +184,49 @@ def adjust_bounding_boxes(objects, width, height, crop_box, strength=0.5):
     
     return new_objects
 
-
-
-# Iterate through each folder and load into a list of Image() objects if the files are images (png, bmp, jpg, jpeg)
+# Iterate through the background folder and load into a list of Image() objects if the files are images (png, bmp, jpg, jpeg)
 bg_images = []
 obj_images = []
 for filename in os.listdir(bg_dir):
     if filename.endswith('.png') or filename.endswith('.bmp') or filename.endswith('.jpg') or filename.endswith('.jpeg'):
         bg_images.append(Image(filename=os.path.join(bg_dir, filename)))
         print('Loaded background image:', filename)
+
+# Remove the background from the object images and save them in the object directory if the flag is set
+if args.remove_background:
+    if not args.raw_object_dir:
+        print('Missing raw object directory')
+        sys.exit(1)
+    raw_obj_dir = args.raw_object_dir
+    if not os.path.exists(raw_obj_dir):
+        print('Raw object directory not found:', raw_obj_dir)
+        sys.exit(1)
+    for filename in os.listdir(raw_obj_dir):
+        if filename.endswith('.png') or filename.endswith('.bmp') or filename.endswith('.jpg') or filename.endswith('.jpeg'):
+            #change output filename to .png
+            out_filename = filename.split('.')[0] + '.png'
+            # Check if out_filename already exists in the object directory
+            if os.path.exists(os.path.join(obj_dir, out_filename)) and args.ignore_already_resized:
+                print('Object image already exists:', out_filename)
+                continue
+
+            if args.resize_raw_objects:
+                # Resize the raw object image to the height of the first background image in the background directory maintaining the aspect ratio
+                bg_width = bg_images[0].width
+                bg_height = bg_images[0].height
+                img = Image(filename=os.path.join(raw_obj_dir, filename))
+                # Calculate the new width while maintaining the aspect ratio
+                aspect_ratio = img.width / img.height
+                new_width = int(bg_height * aspect_ratio)
+                # Resize the image to match the bg_height while maintaining the aspect ratio
+                img.resize(new_width, bg_height)
+                img.save(filename=os.path.join(raw_obj_dir, filename))
+
+                print(f'Reszied raw object image to {bg_width}x{bg_height}:', filename)
+            remove_background_and_crop(os.path.join(raw_obj_dir, filename), os.path.join(obj_dir, out_filename))
+            
+
+# Iterate through the objects folder and load into a list of Image() objects if the files are images (png, bmp, jpg, jpeg)
 for filename in os.listdir(obj_dir):
     if filename.endswith('.png') or filename.endswith('.bmp') or filename.endswith('.jpg') or filename.endswith('.jpeg'):
         # Check if the image filename (before the first underscore) is in the labels list, or if labels is set to 'all' (in which case we add all images)
@@ -240,10 +299,14 @@ for i in range(base_images_number):
 
         # Place the object in a random position within the defined area
 
-        x = random.randint(object_area_left, object_area_left + object_area_width - object_width)
-        y = random.randint(object_area_top, object_area_top + object_area_height - object_height)
-
-
+        # Ensure the object can fit within the defined area
+        if object_area_width >= object_width and object_area_height >= object_height:
+            x = random.randint(object_area_left, object_area_left + object_area_width - object_width)
+            y = random.randint(object_area_top, object_area_top + object_area_height - object_height)
+        else:
+            # Handle the case where the object cannot fit within the defined area
+            print("Error: Object cannot fit within the defined area.")
+            continue
 
         # Check if the object overlaps with any previously placed objects
         overlap = False
@@ -289,8 +352,6 @@ for i in range(base_images_number):
     bbox_json["boundingBoxes"].update({f'composite.{epoch}.{i}.png': objects})
     
     try:
-        
-
         if not args.skip_upload:
             res = requests.post(url=INGESTION_URL + '/api/' + upload_category + '/files',
                 headers={

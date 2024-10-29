@@ -6,137 +6,180 @@
         "description": "Uses background and object images to generate an object detection dataset"
     },
     "parameters": [
+        {
+            "name": "Composite Directory",
+            "value": "composites",
+            "type": "string",
+            "help": "What folder are the source composite images found in? (there should be background and object folders)",
+            "param": "composite-dir"
+        },
+        {
+            "name": "Remove background from raw objects (with rembg)?",
+            "value": false,
+            "type": "boolean",
+            "help": "Whether to remove the background from raw object images and add them to the composites directory. This can be quite a slow process.",
+            "param": "remove-background"
+        },
+        {
+            "name": "Raw Object Directory",
+            "value": "raw_objects",
+            "type": "string",
+            "help": "This directory should contain images of your object on a plain background, this will be removed and cropped then placed in the composites directory to be used as objects",
+            "param": "raw-object-dir",
+            "showIf": {
+                "parameter": "remove-background",
+                "operator": "eq",
+                "value": "true"
+            }
+        },
+        {
+            "name": "Resize raw object images to match background",
+            "value": true,
+            "type": "boolean",
+            "help": "This will match the size of the raw object images to the first background image in your background directory before extracting the objects (so that they are appropriately sized to be the same scale as the background images)",
+            "param": "resize-raw-objects",
+            "showIf": {
+                "parameter": "remove-background",
+                "operator": "eq",
+                "value": "true"
+            }
+        },
+        {
+            "name": "Ignore previously resized raw objects found in composites directory",
+            "value": true,
+            "type": "boolean",
+            "help": "If you have already resized your raw objects and they are in the composites directory, you can skip resizing them again",
+            "param": "ignore-already-resized",
+            "showIf": {
+                "parameter": "remove-background",
+                "operator": "eq",
+                "value": "true"
+            }
+        },
+        {
+            "name": "Labels",
+            "value": "all",
+            "type": "string",
+            "help": "Which objects to generate images for, as a comma-separated list. Set as 'all' to generate images for all objects",
+            "param": "labels"
+        },
+        {
+            "name": "Number of images",
+            "value": 10,
+            "type": "int",
+            "help": "Number of images to generate",
+            "param": "images"
+        },
+        {
+            "name": "Object area",
+            "value": "-1",
+            "type": "string",
+            "help": "x1,y1,x2,y2 coordinates of the valid area to place objects in the composite image, or -1 for the whole image",
+            "param": "object-area"
+        },
+        {
+            "name": "Maximum number of objects",
+            "value": 5,
+            "type": "int",
+            "help": "Maximum number of objects to generate in each image",
+            "param": "objects"
+        },
+        {
+            "name": "Allow overlap",
+            "value": false,
+            "type": "boolean",
+            "help": "Whether objects are allowed to overlap",
+            "param": "allow-overlap"
+        },
+        {
+            "name": "Allow rotate",
+            "value": true,
+            "type": "boolean",
+            "help": "Whether to apply random rotation to objects",
+            "param": "allow-rotate"
+        },
+        {
+            "name": "Apply motion blur?",
+            "value": false,
+            "type": "boolean",
+            "help": "Whether to apply blur to objects to simulate motion",
+            "param": "apply-motion-blur"
+        },
+        {
+            "name": "Motion blur direction",
+            "value": -90,
+            "type": "int",
+            "help": "What direction to apply blur to objects to simulate motion (-1 for random)",
+            "param": "motion-blur-direction",
+            "showIf": {
+                "parameter": "apply-motion-blur",
+                "operator": "eq",
+                "value": "true"
+            }
+        },
+        {
+            "name": "Apply fisheye lens effect",
+            "value": false,
+            "type": "boolean",
+            "help": "Whether to apply fisheye lens effect to the final images",
+            "param": "apply-fisheye"
+        },
+        {
+            "name": "Apply fisheye lens effect to all layers",
+            "value": true,
+            "type": "boolean",
+            "help": "Whether to apply fisheye lens effect to all layers or just to the objects (in case your background images are already fisheyed)",
+            "param": "apply-fisheye-all-layers",
+            "showIf": {
+                "parameter": "apply-fisheye",
+                "operator": "eq",
+                "value": "true"
+            }
+        },
+        {
+            "name": "Fisheye lens effect strength",
+            "value": 2,
+            "type": "float",
+            "help": "Strength of the fisheye lens effect",
+            "param": "fisheye-strength",
+            "showIf": {
+                "parameter": "apply-fisheye",
+                "operator": "eq",
+                "value": "true"
+            }
+        },
+        {
+            "name": "Crop to fisheye?",
+            "value": true,
+            "type": "boolean",
+            "help": "Whether to crop the image to remove black borders after applying fisheye lens effect",
+            "param": "crop-fisheye",
+            "showIf": {
+                "parameter": "apply-fisheye",
+                "operator": "eq",
+                "value": "true"
+            }
+        },
+        {
+            "name": "Upload to category",
+            "value": "split",
+            "type": "select",
+            "valid": [
                 {
-                    "name": "Composite Directory",
-                    "value": "composites",
-                    "type": "string",
-                    "help": "What folder are the source composite images found in? (there should be background and object folders)",
-                    "param": "composite-dir"
+                    "label": "Split 80/20 between training and testing",
+                    "value": "split"
                 },
                 {
-                    "name": "Labels",
-                    "value": "all",
-                    "type": "string",
-                    "help": "Which objects to generate images for, as a comma-separated list. Set as 'all' to generate images for all objects",
-                    "param": "labels"
+                    "label": "Training",
+                    "value": "training"
                 },
                 {
-                    "name": "Number of images",
-                    "value": 10,
-                    "type": "int",
-                    "help": "Number of images to generate",
-                    "param": "images"
-                },
-                {
-                    "name": "Object area",
-                    "value": "-1",
-                    "type": "string",
-                    "help": "x1,y1,x2,y2 coordinates of the valid area to place objects in the composite image, or -1 for the whole image",
-                    "param": "object-area"
-                },
-                {
-                    "name": "Maximum number of objects",
-                    "value": 5,
-                    "type": "int",
-                    "help": "Maximum number of objects to generate in each image",
-                    "param": "objects"
-                },
-                {
-                    "name": "Allow overlap",
-                    "value": false,
-                    "type": "boolean",
-                    "help": "Whether objects are allowed to overlap",
-                    "param": "allow-overlap"
-                },
-                {
-                    "name": "Allow rotate",
-                    "value": true,
-                    "type": "boolean",
-                    "help": "Whether to apply random rotation to objects",
-                    "param": "allow-rotate"
-                },
-                {
-                    "name": "Apply motion blur?",
-                    "value": false,
-                    "type": "boolean",
-                    "help": "Whether to apply blur to objects to simulate motion",
-                    "param": "apply-motion-blur"
-                },
-                {
-                    "name": "Motion blur direction",
-                    "value": -90,
-                    "type": "int",
-                    "help": "What direction to apply blur to objects to simulate motion (-1 for random)",
-                    "param": "motion-blur-direction",
-                    "showIf": {
-                        "parameter": "apply-motion-blur",
-                        "operator": "eq",
-                        "value": "true"
-                    }
-                },
-                {
-                    "name": "Apply fisheye lens effect",
-                    "value": false,
-                    "type": "boolean",
-                    "help": "Whether to apply fisheye lens effect to the final images",
-                    "param": "apply-fisheye"
-                },
-                {
-                    "name": "Apply fisheye lens effect to all layers",
-                    "value": true,
-                    "type": "boolean",
-                    "help": "Whether to apply fisheye lens effect to all layers or just to the objects (in case your background images are already fisheyed)",
-                    "param": "apply-fisheye-all-layers",
-                    "showIf": {
-                        "parameter": "apply-fisheye",
-                        "operator": "eq",
-                        "value": "true"
-                    }
-                },
-                {
-                    "name": "Fisheye lens effect strength",
-                    "value": 2,
-                    "type": "float",
-                    "help": "Strength of the fisheye lens effect",
-                    "param": "fisheye-strength",
-                    "showIf": {
-                        "parameter": "apply-fisheye",
-                        "operator": "eq",
-                        "value": "true"
-                    }
-                },
-                {
-                    "name": "Crop to fisheye?",
-                    "value": true,
-                    "type": "boolean",
-                    "help": "Whether to crop the image to remove black borders after applying fisheye lens effect",
-                    "param": "crop-fisheye",
-                    "showIf": {
-                        "parameter": "apply-fisheye",
-                        "operator": "eq",
-                        "value": "true"
-                    }
-                },
-                {
-                    "name": "Upload to category",
-                    "value": "split",
-                    "type": "select",
-                    "valid": [
-                        {
-                            "label": "Split 80/20 between training and testing",
-                            "value": "split"
-                        },
-                        {
-                            "label": "Training",
-                            "value": "training"
-                        },
-                        {
-                            "label": "Testing",
-                            "value": "testing"
-                        }
-                    ],
-                    "help": "Data will be uploaded to this category in your project",
-                    "param": "upload-category"
+                    "label": "Testing",
+                    "value": "testing"
                 }
+            ],
+            "help": "Data will be uploaded to this category in your project",
+            "param": "upload-category"
+        }
     ]
 }
