@@ -120,7 +120,12 @@ def remove_background_and_crop(image_path, output_path):
     gray = cv2.cvtColor(image_no_bg_np, cv2.COLOR_BGR2GRAY)
     _, binary = cv2.threshold(gray, 1, 255, cv2.THRESH_BINARY)
     contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    x, y, w, h = cv2.boundingRect(contours[0])
+    # set x,y,w,h to the largest bounding box
+    x, y, w, h = 0, 0, 0, 0
+    for contour in contours:
+        x_, y_, w_, h_ = cv2.boundingRect(contour)
+        if w_ > w and h_ > h:
+            x, y, w, h = x_, y_, w_, h_
     
     # Crop the image to the bounding box
     cropped_image = image_no_bg_np[y:y+h, x:x+w]
