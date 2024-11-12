@@ -287,7 +287,7 @@ for i in range(base_images_number):
         background.motion_blur(sigma=blur_amount, angle=blur_direction)
 
     # Create a new image for each object
-    for i in range(random.randrange(num_objects)):
+    for n in range(random.randrange(num_objects)):
         # Load the object image
         object = obj_images[random.randrange(len(obj_images))]
         object_image = object['image'].clone()
