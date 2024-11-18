@@ -78,6 +78,13 @@
             "param": "object-area"
         },
         {
+            "name": "Crop objects outside the chosen area",
+            "value": true,
+            "type": "boolean",
+            "help": "Whether to crop objects that are outside the object area so that only the part of the object that is inside the area is visible",
+            "param": "crop-object-outside-area"
+        },
+        {
             "name": "Maximum number of objects",
             "value": 5,
             "type": "int",

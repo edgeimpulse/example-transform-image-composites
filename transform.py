@@ -34,6 +34,7 @@ parser.add_argument('--allow-rotate', type=int, required=True, help="Whether to 
 parser.add_argument('--apply-motion-blur', type=int, required=True, help="Whether to apply blur to objects to simulate motion")
 parser.add_argument('--motion-blur-direction', type=int, required=False, help="What direction apply blur to objects to simulate motion (-1 for random)", default=-1)
 parser.add_argument('--object-area', type=str, required=True, help="x1,y1,x2,y2 coordinates of the valid area to place objects in the composite image")
+parser.add_argument('--crop-object-outside-area', type=int, required=True, help="Whether to crop objects that are placed outside the valid area so they fit in that area")
 
 parser.add_argument('--apply-fisheye', type=int, required=True, help='Whether to apply fisheye lens effect to the final images')
 parser.add_argument('--apply-fisheye-all-layers', type=int, required=False, help='Whether to apply fisheye lens effect to all layers or just to the objects')
@@ -68,6 +69,7 @@ upload_category = args.upload_category
 num_objects = args.objects
 allow_overlap = args.allow_overlap
 allow_rotate = args.allow_rotate
+crop_object_outside_area = args.crop_object_outside_area
 apply_motion_blur = args.apply_motion_blur
 blur_direction = args.motion_blur_direction
 
@@ -309,9 +311,49 @@ for i in range(base_images_number):
             x = random.randint(object_area_left, object_area_left + object_area_width - object_width)
             y = random.randint(object_area_top, object_area_top + object_area_height - object_height)
         else:
-            # Handle the case where the object cannot fit within the defined area
-            print("Error: Object cannot fit within the defined area.")
-            continue
+            if crop_object_outside_area:
+                # Handle the case where the object cannot fit within the defined area and crop it to fit within the area
+                # Randomly place the object within the defined area (+- half the width of the object)
+                x = random.randint(object_area_left - int(object_width/2), object_area_left + object_area_width- int(object_width/2))
+                y = random.randint(object_area_top - int(object_height/2), object_area_top + object_area_height- int(object_height/2))
+                print(f"Initial position: x={x}, y={y}, object_width={object_width}, object_height={object_height}")
+
+                if x < object_area_left:
+                    crop_x = object_area_left - x
+                    if object_width - crop_x > 0:
+                        print(f"Cropping left: crop_x={crop_x}")
+                        object_image.crop(crop_x, 0, width=object_width - crop_x, height=object_height)
+                        object_width -= crop_x
+                        print(f"New object_width after left crop: {object_width}")
+                    x = object_area_left
+                if y < object_area_top:
+                    crop_y = object_area_top - y
+                    if object_height - crop_y > 0:
+                        print(f"Cropping top: crop_y={crop_y}")
+                        object_image.crop(0, crop_y, width=object_width, height=object_height - crop_y)
+                        object_height -= crop_y
+                        print(f"New object_height after top crop: {object_height}")
+                    y = object_area_top
+                if x + object_width > object_area_left + object_area_width:
+                    crop_width = (x + object_width) - (object_area_left + object_area_width)
+                    if object_width - crop_width > 0:
+                        print(f"Cropping right: crop_width={crop_width}")
+                        object_image.crop(0, 0, width=object_width - crop_width, height=object_height)
+                        object_width -= crop_width
+                        print(f"New object_width after right crop: {object_width}")
+                if y + object_height > object_area_top + object_area_height:
+                    crop_height = (y + object_height) - (object_area_top + object_area_height)
+                    if object_height - crop_height > 0:
+                        print(f"Cropping bottom: crop_height={crop_height}")
+                        object_image.crop(0, 0, width=object_width, height=object_height - crop_height)
+                        object_height -= crop_height
+                        print(f"New object_height after bottom crop: {object_height}")
+
+                print(f"Final position: x={x}, y={y}, object_width={object_width}, object_height={object_height}")
+            else:
+                # Handle the case where the object cannot fit within the defined area
+                print("Error: Object cannot fit within the defined area. Use the Crop Objects Outside Area option to crop the object to fit within the area.")
+                continue
 
         # Check if the object overlaps with any previously placed objects
         overlap = False
