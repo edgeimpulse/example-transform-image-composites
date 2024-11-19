@@ -34,14 +34,44 @@
         },
         {
             "name": "Resize raw object images to match background",
-            "value": true,
-            "type": "boolean",
-            "help": "This will match the size of the raw object images to the first background image in your background directory before extracting the objects (so that they are appropriately sized to be the same scale as the background images)",
+            "value": "fit-width",
+            "type": "select",
+            "help": "How to resize the raw object images",
+            "valid": [
+                {
+                    "label": "Do not resize",
+                    "value": "no-resize"
+                },
+                {
+                    "label": "Fit raw image to background width ",
+                    "value": "fit-width"
+                },
+                {
+                    "label": "Fit raw image to background height",
+                    "value": "fit-height"
+                },
+                {
+                    "label": "Custom per-label (after removing background)",
+                    "value": "custom"
+                }
+            ],
             "param": "resize-raw-objects",
             "showIf": {
                 "parameter": "remove-background",
                 "operator": "eq",
                 "value": "true"
+            }
+        },
+        {
+            "name": "Custom pixel widths for each label [label,width]",
+            "value": "[voltagetester,100],[tape,50],[ringcrimp,25],[else,75]",
+            "type": "string",
+            "help": "Comma-separated list of pixel widths for each label in the format [label,width]. By default any non-mentioned labels will not be resized, you can change this by passing [else,75]",
+            "param": "custom-raw-resize",
+            "showIf": {
+                "parameter": "resize-raw-objects",
+                "operator": "eq",
+                "value": "custom"
             }
         },
         {

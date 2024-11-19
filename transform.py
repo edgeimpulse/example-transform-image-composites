@@ -23,7 +23,10 @@ parser = argparse.ArgumentParser(description='Use OpenAI Dall-E to generate an i
 parser.add_argument('--composite-dir', type=str, required=True, help="What folder are the source composite images found in? (there should be background and object folders)")
 parser.add_argument('--remove-background', type=int, required=True, help="Do you have images of your objects which need the background removing?")
 parser.add_argument('--raw-object-dir', type=str, required=False, help="What folder are the source composite images found in? (there should be background and object folders)")
-parser.add_argument('--resize-raw-objects', type=int, required=False, help="This will match the size of the raw object images to the first background image in your background directory before extracting the objects (so that they are appropriately sized to be the same scale as the background images)")
+parser.add_argument('--resize-raw-objects', type=str, required=False, help="What method to use to resize the raw object images to match the background images", default='no-resize')
+parser.add_argument('--custom-raw-resize-pixels', type=str, required=False, help="Comma-separated list of pixel widths for each raw file in the format [filename,width]. By default any non-mentioned labels will not be resized, you can change this by passing [else,75]")
+parser.add_argument('--custom-raw-resize-scaling-factor', type=float, required=False, help="Scaling factor to apply to all raw object images", default=0.5)
+
 parser.add_argument('--ignore-already-resized', type=int, required=False, help="If set to 1, will ignore already resized images in the object directory, otherwise they will be done again and overwritten", default=0)
 
 parser.add_argument('--labels', type=str, required=True, help="Which objects to generate images for, as a comma-separated list. Set as 'all' to generate images for all objects")
@@ -72,6 +75,20 @@ allow_rotate = args.allow_rotate
 crop_object_outside_area = args.crop_object_outside_area
 apply_motion_blur = args.apply_motion_blur
 blur_direction = args.motion_blur_direction
+
+resize_raw_objects = args.resize_raw_objects
+if args.custom_raw_resize_pixels:
+    custom_resize_dict = {}
+    try:
+        custom_resize_list = args.custom_raw_resize_pixels.split('],[')
+        custom_resize_list[0] = custom_resize_list[0][1:]
+        custom_resize_list[-1] = custom_resize_list[-1][:-1]
+        for item in custom_resize_list:
+            label, width = item.split(',')
+            custom_resize_dict[label] = int(width)
+    except Exception as e:
+        print(f"Error parsing custom raw resize argument: {e}")
+        sys.exit(1)
 
 bbox_json = {
     "version": 1,
@@ -217,7 +234,7 @@ if args.remove_background:
                 print('Object image already exists:', out_filename)
                 continue
 
-            if args.resize_raw_objects:
+            if args.resize_raw_objects == 'fit-height':
                 # Resize the raw object image to the height of the first background image in the background directory maintaining the aspect ratio
                 bg_width = bg_images[0].width
                 bg_height = bg_images[0].height
@@ -229,7 +246,54 @@ if args.remove_background:
                 img.resize(new_width, bg_height)
                 img.save(filename=os.path.join(raw_obj_dir, filename))
 
-                print(f'Reszied raw object image to {bg_width}x{bg_height}:', filename)
+                print(f'Reszied raw object image using {args.resize_raw_objects} to {bg_width}x{bg_height}:', filename)
+            elif args.resize_raw_objects == 'fit-width':
+                # Resize the raw object image to the width of the first background image in the background directory maintaining the aspect ratio
+                bg_width = bg_images[0].width
+                bg_height = bg_images[0].height
+                img = Image(filename=os.path.join(raw_obj_dir, filename))
+                # Calculate the new height while maintaining the aspect ratio
+                aspect_ratio = img.width / img.height
+                new_height = int(bg_width / aspect_ratio)
+                # Resize the image to match the bg_width while maintaining the aspect ratio
+                img.resize(bg_width, new_height)
+                img.save(filename=os.path.join(raw_obj_dir, filename))
+
+                print(f'Resized raw object image using {args.resize_raw_objects} to {bg_width}x{bg_height}:', filename)
+            elif args.resize_raw_objects == 'custom-scaling-factor':
+                # Resize the raw object image by the specified scaling factor
+                img = Image(filename=os.path.join(raw_obj_dir, filename))
+                img.resize(int(img.width * args.custom_raw_resize_scaling_factor), int(img.height * args.custom_raw_resize_scaling_factor))
+                img.save(filename=os.path.join(raw_obj_dir, filename))
+
+                print(f'Resized raw object image using {args.resize_raw_objects} by {args.custom_raw_resize_scaling_factor}x:', filename)
+            elif args.resize_raw_objects == 'custom-pixels':
+                # Resize the raw object image to the specified width for the label
+                if filename in custom_resize_dict:
+                    width = custom_resize_dict[filename]
+                    img = Image(filename=os.path.join(raw_obj_dir, filename))
+                    # Calculate the new height while maintaining the aspect ratio
+                    aspect_ratio = img.width / img.height
+                    new_height = int(width / aspect_ratio)
+                    # Resize the image to match the width while maintaining the aspect ratio
+                    img.resize(width, new_height)
+                    img.save(filename=os.path.join(raw_obj_dir, filename))
+
+                    print(f'Resized raw object image using {args.resize_raw_objects} to {width}x{new_height}:', filename)
+            else:
+                if 'else' in custom_resize_dict:
+                    width = custom_resize_dict['else']
+                    img = Image(filename=os.path.join(raw_obj_dir, filename))
+                    # Calculate the new height while maintaining the aspect ratio
+                    aspect_ratio = img.width / img.height
+                    new_height = int(width / aspect_ratio)
+                    # Resize the image to match the width while maintaining the aspect ratio
+                    img.resize(width, new_height)
+                    img.save(filename=os.path.join(raw_obj_dir, filename))
+
+                    print(f'Filename {filename} not found in custom resize dictionary, Resized raw object image using {args.resize_raw_objects} to {width}x{new_height}:', filename)
+                else:
+                    print(f'Label {label} not found in custom resize dictionary, skipping resize:', filename)
             remove_background_and_crop(os.path.join(raw_obj_dir, filename), os.path.join(obj_dir, out_filename))
             
 
