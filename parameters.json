@@ -115,6 +115,13 @@
             "param": "crop-object-outside-area"
         },
         {
+            "name": "Minimum number of objects",
+            "value": 0,
+            "type": "int",
+            "help": "Minimum number of objects to generate in each image",
+            "param": "min-objects"
+        },
+        {
             "name": "Maximum number of objects",
             "value": 5,
             "type": "int",

@@ -31,6 +31,7 @@ parser.add_argument('--ignore-already-resized', type=int, required=False, help="
 
 parser.add_argument('--labels', type=str, required=True, help="Which objects to generate images for, as a comma-separated list. Set as 'all' to generate images for all objects")
 parser.add_argument('--images', type=int, required=True, help="Number of images to generate")
+parser.add_argument('--min-objects', type=int, required=True, help="Minimum number of objects to generate")
 parser.add_argument('--objects', type=int, required=True, help="Maximum number of objects to generate")
 parser.add_argument('--allow-overlap', type=int, required=True, help="Whether objects are allowed to overlap")
 parser.add_argument('--allow-rotate', type=int, required=True, help="Whether to apply random rotation to objects")
@@ -69,6 +70,7 @@ else:
 
 base_images_number = args.images
 upload_category = args.upload_category
+min_num_objects = args.min_objects
 num_objects = args.objects
 allow_overlap = args.allow_overlap
 allow_rotate = args.allow_rotate
@@ -353,7 +355,7 @@ for i in range(base_images_number):
         background.motion_blur(sigma=blur_amount, angle=blur_direction)
 
     # Create a new image for each object
-    for n in range(random.randrange(num_objects)):
+    for n in range(random.randrange(min_num_objects, num_objects + 1)):
         # Load the object image
         object = obj_images[random.randrange(len(obj_images))]
         object_image = object['image'].clone()
