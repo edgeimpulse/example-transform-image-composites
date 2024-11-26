@@ -143,6 +143,32 @@
             "param": "allow-rotate"
         },
         {
+            "name": "Apply resize",
+            "value": false,
+            "type": "boolean",
+            "help": "Whether to change the size of the objects",
+            "param": "apply-resize"
+        },
+        {
+            "name": "Object size randomisation percantage",
+            "value": 50,
+            "type": "float",
+            "help": "How much change should be applied to object size? (in percentage)",
+            "param": "resize-percentage",
+            "showIf": {
+                "parameter": "apply-resize",
+                "operator": "eq",
+                "value": "true"
+            }
+        },
+        {
+            "name": "Allow shadow?",
+            "value": false,
+            "type": "boolean",
+            "help": "Whether to change brightness to simulate shadow",
+            "param": "allow-shadow"
+        },
+        {
             "name": "Apply motion blur?",
             "value": false,
             "type": "boolean",

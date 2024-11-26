@@ -35,6 +35,9 @@ parser.add_argument('--min-objects', type=int, required=True, help="Minimum numb
 parser.add_argument('--objects', type=int, required=True, help="Maximum number of objects to generate")
 parser.add_argument('--allow-overlap', type=int, required=True, help="Whether objects are allowed to overlap")
 parser.add_argument('--allow-rotate', type=int, required=True, help="Whether to apply random rotation to objects")
+parser.add_argument('--apply-resize', type=int, required=True, help="Whether to change the size of the objects")
+parser.add_argument('--resize-percentage', type=int, required=False, help="How much change should be applied to object size? (in percentage)")
+parser.add_argument('--allow-shadow', type=int, required=True, help="Whether to change brightness to simulate shadow")
 parser.add_argument('--apply-motion-blur', type=int, required=True, help="Whether to apply blur to objects to simulate motion")
 parser.add_argument('--motion-blur-direction', type=int, required=False, help="What direction apply blur to objects to simulate motion (-1 for random)", default=-1)
 parser.add_argument('--object-area', type=str, required=True, help="x1,y1,x2,y2 coordinates of the valid area to place objects in the composite image")
@@ -74,6 +77,9 @@ min_num_objects = args.min_objects
 num_objects = args.objects
 allow_overlap = args.allow_overlap
 allow_rotate = args.allow_rotate
+apply_resize = args.apply_resize
+resize_percentage = args.resize_percentage
+allow_shadow = args.allow_shadow
 crop_object_outside_area = args.crop_object_outside_area
 apply_motion_blur = args.apply_motion_blur
 blur_direction = args.motion_blur_direction
@@ -330,6 +336,8 @@ print('Number of images:', base_images_number)
 print('Objects to be generated:', args.objects)
 print('Allow overlap:', args.allow_overlap)
 print('Object area:', object_area)
+# print('MOE DEBUG: bg_images: ', bg_images)
+# print('MOE DEBUG: obj_images: ', obj_images)
 print('')
 
 for i in range(base_images_number):
@@ -363,8 +371,13 @@ for i in range(base_images_number):
         if allow_rotate:
             object_image.rotate(random.uniform(0, 360))
 
-        object_width = object_image.width
-        object_height = object_image.height
+        if apply_resize:
+            random_percentage = random.uniform(resize_percentage, 100)
+            object_width = int(object_image.width * (random_percentage / 100))
+            object_height = int(object_image.height * (random_percentage / 100))
+        else:
+            object_width = object_image.width
+            object_height = object_image.height
 
         object_image.resize(object_width, object_height)
         if apply_motion_blur:
@@ -474,6 +487,9 @@ for i in range(base_images_number):
                         'generated_by': 'composite-image-generator',
                         'allow_overlap': str(args.allow_overlap),
                         'allow_rotate': str(args.allow_rotate),
+                        'apply_resize': str(args.apply_resize),
+                        'resize_percentage': str(args.resize_percentage),
+                        'allow_shadow': str(args.allow_shadow),
                         'apply_motion_blur': str(args.apply_motion_blur),
                         'motion_blur_direction': str(args.motion_blur_direction),
                         'object_area': str(args.object_area),
