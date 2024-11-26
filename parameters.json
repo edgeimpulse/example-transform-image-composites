@@ -67,7 +67,7 @@
             "value": "[voltagetester,100],[tape,50],[ringcrimp,25],[else,75]",
             "type": "string",
             "help": "Comma-separated list of pixel widths for each label in the format [label,width]. By default any non-mentioned labels will not be resized, you can change this by passing [else,75]",
-            "param": "custom-raw-resize",
+            "param": "custom-raw-resize-pixels",
             "showIf": {
                 "parameter": "resize-raw-objects",
                 "operator": "eq",
