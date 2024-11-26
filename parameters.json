@@ -8,9 +8,9 @@
     "parameters": [
         {
             "name": "Composite Directory",
-            "value": "composites",
+            "value": "/mnt/s3fs/composite-image-portal/composites",
             "type": "string",
-            "help": "What folder are the source composite images found in? (there should be background and object folders)",
+            "help": "What folder are the source composite images found in? (there should be background and object folders). Mount an Upload Portal with name 'composite-image-portal' to this transformation block with the root path '/mnt/s3fs/composite-image-portal' to allow for easy updating of source images.",
             "param": "composite-dir"
         },
         {
@@ -22,9 +22,9 @@
         },
         {
             "name": "Raw Object Directory",
-            "value": "raw_objects",
+            "value": "/mnt/s3fs/composite-image-portal/raw_objects",
             "type": "string",
-            "help": "This directory should contain images of your object on a plain background, this will be removed and cropped then placed in the composites directory to be used as objects",
+            "help": "This directory should contain images of your object on a plain background, this will be removed and cropped then placed in the composites directory to be used as objects. Mount an Upload Portal with name 'composite-image-portal' to this transformation block with the root path '/mnt/s3fs/composite-image-portal' to allow for easy updating of source images.",
             "param": "raw-object-dir",
             "showIf": {
                 "parameter": "remove-background",
@@ -51,8 +51,12 @@
                     "value": "fit-height"
                 },
                 {
-                    "label": "Custom per-label (after removing background)",
-                    "value": "custom"
+                    "label": "Custom scaling factor for each raw file",
+                    "value": "custom-scaling-factor"
+                },
+                {
+                    "label": "Custom pixel widths for each raw file",
+                    "value": "custom-pixels"
                 }
             ],
             "param": "resize-raw-objects",
@@ -63,15 +67,27 @@
             }
         },
         {
-            "name": "Custom pixel widths for each label [label,width]",
-            "value": "[voltagetester,100],[tape,50],[ringcrimp,25],[else,75]",
+            "name": "Custom pixel widths for each raw file [filename,width]",
+            "value": "[voltagetester_side.jpg,100],[voltagetester_top.jpg,100],[voltagetester_top2.jpg,100],[tape_top.jpg,50],[else,25]",
             "type": "string",
             "help": "Comma-separated list of pixel widths for each label in the format [label,width]. By default any non-mentioned labels will not be resized, you can change this by passing [else,75]",
-            "param": "custom-raw-resize",
+            "param": "custom-raw-resize-pixels",
             "showIf": {
                 "parameter": "resize-raw-objects",
                 "operator": "eq",
-                "value": "custom"
+                "value": "custom-pixels"
+            }
+        },
+        {
+            "name": "Custom Scaling Factor (how much to multiply all your raw images by)",
+            "value": 0.5,
+            "type": "float",
+            "help": "Scaling factor to apply to all raw images",
+            "param": "custom-raw-resize-scaling-factor",
+            "showIf": {
+                "parameter": "resize-raw-objects",
+                "operator": "eq",
+                "value": "custom-scaling-factor"
             }
         },
         {

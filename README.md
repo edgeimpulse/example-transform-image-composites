@@ -1,11 +1,28 @@
 # Composite Image Generation Block for Edge Impulse
 
-This is a transformation block that generates synthetic data for your Edge Impulse project by compositing background images with randomly placed object images (with transparency). It uses the method described in this tutorial: https://github.com/edgeimpulse/conveyor-counting-data-synthesis-demo. To add new object images and background images store them in the composites folder and use the following command to upload to the block: 
+This is a transformation block that generates synthetic data for your Edge Impulse project by compositing background images with randomly placed object images (with transparency). It uses the method described in this tutorial: https://github.com/edgeimpulse/conveyor-counting-data-synthesis-demo.
+
+
+Upload this block to your Enterprise Organisation in Edge Impulse with: 
 ```
+$ edge-impulse-blocks init
+
 $ edge-impulse-blocks push
 ```
+## Adding your source images
+For this block to work you will need background and object images. This block takes in a "composite directory" parameter as well as a "raw objects directory" parameter for the location of the source images.
 
-from within this folder
+The easiest way to provide these source images to the block is:
+1. In your Edge Impulse Organisation:
+2. Create an 'Upload Portal' with the name 'composite-image-portal' as an Edge Impulse Hosted portal
+3. Head to the "Synthetic Data" Blocks area under "Custom Blocks" and edit your uploaded block
+4. Click the + icon next to "Additional Mount Points" and choose "Portal", then your composite-image-portal. Finally, set the mounting location as '/mnt/s3fs/composite-image-portal
+5. Now you can head to your Upload Portal and upload your source images with the following file structure:
+composites --->  background [for background source images]
+           --->  object [for cut outs of your objects (without background)]
+raw_objects  [raw object images which need their background removed by the rembg tool]
+
+When you use the tool (see below) it will take in images uploaded to this portal, and any cut-outs from the raw_objects folder will be stored in the composites->object folder.
 
 ## How to run (Edge Impulse)
 
