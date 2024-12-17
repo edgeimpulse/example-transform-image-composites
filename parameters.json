@@ -162,13 +162,6 @@
             }
         },
         {
-            "name": "Allow shadow?",
-            "value": false,
-            "type": "boolean",
-            "help": "Whether to change brightness to simulate shadow",
-            "param": "allow-shadow"
-        },
-        {
             "name": "Apply motion blur?",
             "value": false,
             "type": "boolean",

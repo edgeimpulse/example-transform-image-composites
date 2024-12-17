@@ -37,7 +37,6 @@ parser.add_argument('--allow-overlap', type=int, required=True, help="Whether ob
 parser.add_argument('--allow-rotate', type=int, required=True, help="Whether to apply random rotation to objects")
 parser.add_argument('--apply-resize', type=int, required=True, help="Whether to change the size of the objects")
 parser.add_argument('--resize-percentage', type=int, required=False, help="How much change should be applied to object size? (in percentage)")
-parser.add_argument('--allow-shadow', type=int, required=True, help="Whether to change brightness to simulate shadow")
 parser.add_argument('--apply-motion-blur', type=int, required=True, help="Whether to apply blur to objects to simulate motion")
 parser.add_argument('--motion-blur-direction', type=int, required=False, help="What direction apply blur to objects to simulate motion (-1 for random)", default=-1)
 parser.add_argument('--object-area', type=str, required=True, help="x1,y1,x2,y2 coordinates of the valid area to place objects in the composite image")
@@ -79,7 +78,6 @@ allow_overlap = args.allow_overlap
 allow_rotate = args.allow_rotate
 apply_resize = args.apply_resize
 resize_percentage = args.resize_percentage
-allow_shadow = args.allow_shadow
 crop_object_outside_area = args.crop_object_outside_area
 apply_motion_blur = args.apply_motion_blur
 blur_direction = args.motion_blur_direction
@@ -489,7 +487,6 @@ for i in range(base_images_number):
                         'allow_rotate': str(args.allow_rotate),
                         'apply_resize': str(args.apply_resize),
                         'resize_percentage': str(args.resize_percentage),
-                        'allow_shadow': str(args.allow_shadow),
                         'apply_motion_blur': str(args.apply_motion_blur),
                         'motion_blur_direction': str(args.motion_blur_direction),
                         'object_area': str(args.object_area),
