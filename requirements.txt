@@ -2,4 +2,5 @@ wand
 requests==2.28.2
 opencv-python-headless
 numpy>=1.19
-rembg
+rembg[cpu]
+onnxruntime
